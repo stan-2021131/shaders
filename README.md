@@ -28,3 +28,22 @@ Superficie planetaria rocosa generada matemáticamente mediante síntesis analí
 2. **Capa 2: Mesetas y Masas Continentales:** Terreno elevado intermedio con tonalidades ocres, arcillosas y terracota mineral `(0.28, 0.20, 0.17)`.
 3. **Capa 3: Cráteres de Impacto con Crestas Elevadas:** Patrones circulares generados mediante *ridged noise* `(1 - |ruido - 0.5| * 2)^2` con bordes claros y depósitos de eyecta.
 4. **Capa 4: Micro-regolito e Iluminación Fotométrica Solar:** Grano granular de alta frecuencia superficial acoplado a un modelo de iluminación difusa originado en el Sol central `(0, 0, 0)` con modulación de relieve.
+
+
+## Planeta Tierra: Shader Biosférico y Atmosférico
+Representación analítica de un planeta habitable con hidrosfera, masas continentales, criosfera polar y atmósfera dinámica:
+
+1. **Capa 1: Hidrosfera y Océanos Profundos:** Modelo de gradiente batimétrico desde abismos azul marino profundo `(0.04, 0.15, 0.45)` hasta aguas someras turquesas `(0.10, 0.45, 0.80)`.
+2. **Capa 2: Masas Continentales:** Máscara continental mediante ruido fractal (FBM) que transiciona de biomas verdes de pradera y vegetación `(0.12, 0.48, 0.14)` a mesetas áridas y elevaciones montañosas `(0.55, 0.28, 0.18)`.
+3. **Capa 3: Criósfera y Casquetes Polares:** Nieve y glaciares continentales en latitudes árticas y antárticas `|lat| > 0.70` con bordes perturbados proceduralmente.
+4. **Capa 4: Cobertura Nubosa Dinámica y Dispersión Atmosférica Rayleigh (Fresnel):**
+   - Sistema de nubes animadas generadas con ruido fractal que giran a velocidad angular diferencial de la corteza.
+   - Resplandor atmosférico de borde (efecto limb azul) `(1 - N·V)^3.0` simulando la dispersión de luz en la atmósfera.
+
+## Luna: Shader Regolítico y Cuencas de Impacto
+Satélite natural que orbita solidariamente alrededor del planeta Tierra con modelo propio e independiente:
+
+1. **Capa 1: Mares Lunares Basálticos:** Grandes planicies de basalto volcánico oscuro de baja reflectancia en gris carbón.
+2. **Capa 2: Tierras Altas de Anortosita:** Terreno elevado más antiguo y accidentado en tonalidades gris plateado.
+3. **Capa 3: Cráteres y Rayos de Eyecta:** Cráteres de impacto con crestas afiladas modeladas con *ridged noise* y material reflectante eyectado.
+4. **Capa 4: Fotometría de Vacío Espacial:** Iluminación solar directa con sombras nítidas y ausencia de atenuación atmosférica (terminator definido).

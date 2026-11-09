@@ -2,7 +2,7 @@ use ::shaders::buffer::{Color, DepthBuffer, Framebuffer};
 use ::shaders::camera::Camera;
 use ::shaders::math::{Mat4, Vec3};
 use ::shaders::mesh::Mesh;
-use ::shaders::pipeline::shaders::{RockyPlanetShader, SunShader};
+use ::shaders::pipeline::shaders::{EarthPlanetShader, MoonShader, RockyPlanetShader, SunShader};
 use ::shaders::pipeline::{BlendMode, RenderContext, RenderTarget, SoftwareRenderer};
 use raylib::ffi;
 use raylib::prelude::{Color as RColor, Image, KeyboardKey, RaylibDraw, RaylibTexture2D};
@@ -39,13 +39,13 @@ fn main() {
     let mut framebuffer = Framebuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     let mut depth_buffer = DepthBuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    // Cámara orbital panorámica que abarca al Sol y la órbita del planeta rocoso
+    // Cámara orbital panorámica que abarca al Sol, Planeta Rocoso, Tierra y su Luna
     let aspect = WINDOW_WIDTH as f32 / WINDOW_HEIGHT as f32;
     let mut camera = Camera::new(
         Vec3::zero(),
-        8.2,
+        12.5,
         0.3,
-        0.4,
+        0.35,
         45.0,
         aspect,
         0.1,
@@ -72,11 +72,13 @@ fn main() {
     // Shaders procedurales en CPU
     let mut sun_shader = SunShader::new(Vec3::zero());
     let mut rocky_shader = RockyPlanetShader::new(42, Vec3::zero());
+    let mut earth_shader = EarthPlanetShader::new(107, Vec3::zero());
+    let mut moon_shader = MoonShader::new(999, Vec3::zero());
 
     let mut sim_time: f32 = 0.0;
 
     println!("============================================================");
-    println!("[Sistema Solar: Sol y Planeta Rocoso]");
+    println!("[Sistema Solar: Sol, Planeta Rocoso, Tierra y Luna]");
     println!("  [Flecha Izq / Der] : Orbitar cámara horizontalmente");
     println!("  [Flecha Arr / Aba] : Ajustar elevación (pitch)");
     println!("  [Escape]           : Cerrar la ventana");
@@ -108,7 +110,7 @@ fn main() {
         let vp_matrix = camera.view_projection_matrix();
 
         // =====================================================================
-        // 1. RENDERIZADO DEL SOL (Estrella central)
+        // 1. SOL (Estrella central)
         // =====================================================================
         let sun_rotation = sim_time * 0.4;
         let sun_model = Mat4::scaling(1.15, 1.15, 1.15) * Mat4::rotation_y(sun_rotation);
@@ -127,9 +129,9 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &sun_ctx, &mut target);
 
         // =====================================================================
-        // 2. RENDERIZADO DEL PLANETA ROCOSO (Traslación orbital y rotación)
+        // 2. PLANETA ROCOSO (Órbita interior)
         // =====================================================================
-        let rocky_orbit_radius = 3.6;
+        let rocky_orbit_radius = 3.4;
         let rocky_orbit_speed = 0.65;
         let rocky_angle = sim_time * rocky_orbit_speed;
         let rocky_pos = Vec3::new(
@@ -138,7 +140,7 @@ fn main() {
             rocky_orbit_radius * rocky_angle.sin(),
         );
         let rocky_rotation = sim_time * 1.8;
-        let rocky_scale = 0.42;
+        let rocky_scale = 0.38;
 
         let rocky_model = Mat4::translation(rocky_pos.x, rocky_pos.y, rocky_pos.z)
             * Mat4::rotation_y(rocky_rotation)
@@ -147,12 +149,71 @@ fn main() {
 
         rocky_shader.body_center = rocky_pos;
         rocky_shader.rotation_rad = rocky_rotation;
-        rocky_shader.light_pos = Vec3::zero(); // Iluminado desde el Sol en el origen
+        rocky_shader.light_pos = Vec3::zero();
 
         let rocky_ctx = RenderContext::new(&rocky_model, &rocky_rot, &vp_matrix, &rocky_shader)
             .with_blend_mode(BlendMode::Opaque);
 
         renderer.render_mesh(&sphere_mesh, &rocky_ctx, &mut target);
+
+        // =====================================================================
+        // 3. PLANETA TIERRA (Órbita intermedia habitable)
+        // =====================================================================
+        let earth_orbit_radius = 6.2;
+        let earth_orbit_speed = 0.40;
+        let earth_angle = sim_time * earth_orbit_speed + 1.2;
+        let earth_pos = Vec3::new(
+            earth_orbit_radius * earth_angle.cos(),
+            0.0,
+            earth_orbit_radius * earth_angle.sin(),
+        );
+        let earth_rotation = sim_time * 1.4;
+        let earth_scale = 0.52;
+
+        let earth_model = Mat4::translation(earth_pos.x, earth_pos.y, earth_pos.z)
+            * Mat4::rotation_y(earth_rotation)
+            * Mat4::scaling(earth_scale, earth_scale, earth_scale);
+        let earth_rot = Mat4::rotation_y(earth_rotation);
+
+        earth_shader.body_center = earth_pos;
+        earth_shader.rotation_rad = earth_rotation;
+        earth_shader.time = sim_time;
+        earth_shader.camera_pos = camera.eye;
+        earth_shader.light_pos = Vec3::zero();
+
+        let earth_ctx = RenderContext::new(&earth_model, &earth_rot, &vp_matrix, &earth_shader)
+            .with_blend_mode(BlendMode::Opaque);
+
+        renderer.render_mesh(&sphere_mesh, &earth_ctx, &mut target);
+
+        // =====================================================================
+        // 4. LUNA DE LA TIERRA (Órbita local alrededor de la Tierra)
+        // =====================================================================
+        let moon_orbit_radius = 1.15;
+        let moon_orbit_speed = 1.8;
+        let moon_angle = sim_time * moon_orbit_speed;
+        let moon_pos = earth_pos
+            + Vec3::new(
+                moon_orbit_radius * moon_angle.cos(),
+                0.22 * moon_angle.sin(),
+                moon_orbit_radius * moon_angle.sin(),
+            );
+        let moon_rotation = sim_time * 0.9;
+        let moon_scale = 0.14;
+
+        let moon_model = Mat4::translation(moon_pos.x, moon_pos.y, moon_pos.z)
+            * Mat4::rotation_y(moon_rotation)
+            * Mat4::scaling(moon_scale, moon_scale, moon_scale);
+        let moon_rot = Mat4::rotation_y(moon_rotation);
+
+        moon_shader.body_center = moon_pos;
+        moon_shader.rotation_rad = moon_rotation;
+        moon_shader.light_pos = Vec3::zero();
+
+        let moon_ctx = RenderContext::new(&moon_model, &moon_rot, &vp_matrix, &moon_shader)
+            .with_blend_mode(BlendMode::Opaque);
+
+        renderer.render_mesh(&sphere_mesh, &moon_ctx, &mut target);
 
         // Actualización y presentación en Raylib
         screen_texture
@@ -165,14 +226,14 @@ fn main() {
 
         // Overlay informativo
         d.draw_text(
-            "Sistema Solar: Sol (Estrella) y Planeta Rocoso (Orbita activa)",
+            "Sistema Solar: Sol, Planeta Rocoso, Planeta Tierra y Luna",
             20,
             20,
             20,
             RColor::GOLD,
         );
         d.draw_text(
-            "Flechas: Orbitar camara | Traslacion y rotacion analiticas por tiempo",
+            "Flechas: Orbitar camara | Traslacion heliocéntrica y lunar en tiempo real",
             20,
             46,
             16,

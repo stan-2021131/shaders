@@ -1,8 +1,12 @@
+pub mod earth;
+pub mod moon;
 pub mod rocky;
 pub mod sun;
 
 use crate::buffer::Color;
 use crate::math::{Vec2, Vec3};
+pub use earth::EarthPlanetShader;
+pub use moon::MoonShader;
 pub use rocky::RockyPlanetShader;
 pub use sun::SunShader;
 
