@@ -3,7 +3,7 @@ use ::shaders::camera::Camera;
 use ::shaders::math::{Mat4, Vec3};
 use ::shaders::mesh::Mesh;
 use ::shaders::pipeline::shaders::{
-    EarthPlanetShader, GasGiantShader, MoonShader, RockyPlanetShader, SunShader,
+    EarthPlanetShader, GasGiantShader, MoonShader, RingShader, RockyPlanetShader, SunShader,
 };
 use ::shaders::pipeline::{BlendMode, RenderContext, RenderTarget, SoftwareRenderer};
 use raylib::ffi;
@@ -21,19 +21,29 @@ fn main() {
 
     rl.set_target_fps(60);
 
-    // Carga de la geometría base de la esfera
-    let model_path = Path::new("assets/models/sphere.obj");
-    let sphere_mesh = Mesh::load_obj(model_path).unwrap_or_else(|err| {
+    // Carga de geometrías de cuerpos celestes
+    let sphere_path = Path::new("assets/models/sphere.obj");
+    let sphere_mesh = Mesh::load_obj(sphere_path).unwrap_or_else(|err| {
         panic!(
             "No se pudo cargar la malla de la esfera desde {:?}: {}",
-            model_path, err
+            sphere_path, err
+        );
+    });
+
+    let ring_path = Path::new("assets/models/anillo.obj");
+    let ring_mesh = Mesh::load_obj(ring_path).unwrap_or_else(|err| {
+        panic!(
+            "No se pudo cargar la malla de los anillos desde {:?}: {}",
+            ring_path, err
         );
     });
 
     println!(
-        "[RECURSOS] Malla cargada exitosamente: {} vertices, {} triangulos",
+        "[RECURSOS] Mallas cargadas exitosamente:\n  - Esfera: {} vertices, {} triangulos\n  - Anillos: {} vertices, {} triangulos",
         sphere_mesh.vertices.len(),
-        sphere_mesh.indices.len() / 3
+        sphere_mesh.indices.len() / 3,
+        ring_mesh.vertices.len(),
+        ring_mesh.indices.len() / 3,
     );
 
     // Inicialización del pipeline de software en CPU
@@ -77,11 +87,12 @@ fn main() {
     let mut earth_shader = EarthPlanetShader::new(107, Vec3::zero());
     let mut moon_shader = MoonShader::new(999, Vec3::zero());
     let mut gas_giant_shader = GasGiantShader::new(314, Vec3::zero());
+    let mut ring_shader = RingShader::new(Vec3::zero(), 1.10, 1.95);
 
     let mut sim_time: f32 = 0.0;
 
     println!("============================================================");
-    println!("[Sistema Solar: Sol, Planeta Rocoso, Tierra, Gigante Gaseoso y Lunas]");
+    println!("[Sistema Solar: Sol, Rocoso, Tierra, Gigante Gaseoso, Lunas y Anillos]");
     println!("  [Flecha Izq / Der] : Orbitar cámara horizontalmente");
     println!("  [Flecha Arr / Aba] : Ajustar elevación (pitch)");
     println!("  [Escape]           : Cerrar la ventana");
@@ -224,7 +235,7 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &earth_moon_ctx, &mut target);
 
         // =====================================================================
-        // 5. GIGANTE GASEOSO (Órbita exterior)
+        // 5. GIGANTE GASEOSO (Cuerpo planetario)
         // =====================================================================
         let gas_orbit_radius = 9.8;
         let gas_orbit_speed = 0.22;
@@ -254,10 +265,10 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &gas_ctx, &mut target);
 
         // =====================================================================
-        // 6. LUNAS DEL GIGANTE GASEOSO (Luna 1 interior y Luna 2 exterior inclinada)
+        // 6. LUNAS DEL GIGANTE GASEOSO
         // =====================================================================
         // Luna 1 (Titán)
-        let gas_moon1_radius = 1.55;
+        let gas_moon1_radius = 1.60;
         let gas_moon1_speed = 1.4;
         let gas_moon1_angle = sim_time * gas_moon1_speed;
         let gas_moon1_pos = gas_pos
@@ -281,8 +292,8 @@ fn main() {
         .with_blend_mode(BlendMode::Opaque);
         renderer.render_mesh(&sphere_mesh, &gas_moon1_ctx, &mut target);
 
-        // Luna 2 (Encélado / exterior inclinada)
-        let gas_moon2_radius = 2.15;
+        // Luna 2 (Encélado)
+        let gas_moon2_radius = 2.25;
         let gas_moon2_speed = 0.85;
         let gas_moon2_angle = sim_time * gas_moon2_speed + 1.8;
         let gas_moon2_pos = gas_pos
@@ -306,6 +317,26 @@ fn main() {
         .with_blend_mode(BlendMode::Opaque);
         renderer.render_mesh(&sphere_mesh, &gas_moon2_ctx, &mut target);
 
+        // =====================================================================
+        // 7. SISTEMA DE ANILLOS DE SATURNO (Alpha Blending transparente)
+        // =====================================================================
+        let ring_tilt_x = 0.44;
+        let ring_tilt_z = 0.16;
+        let ring_rot = Mat4::rotation_x(ring_tilt_x) * Mat4::rotation_z(ring_tilt_z);
+        let ring_scale = 0.75;
+        let ring_model = Mat4::translation(gas_pos.x, gas_pos.y, gas_pos.z)
+            * ring_rot
+            * Mat4::scaling(ring_scale, ring_scale, ring_scale);
+
+        ring_shader.body_center = gas_pos;
+        ring_shader.set_rotation(ring_rot);
+        ring_shader.light_pos = Vec3::zero();
+
+        let ring_ctx = RenderContext::new(&ring_model, &ring_rot, &vp_matrix, &ring_shader)
+            .with_blend_mode(BlendMode::AlphaBlend);
+
+        renderer.render_mesh(&ring_mesh, &ring_ctx, &mut target);
+
         // Actualización y presentación en Raylib
         screen_texture
             .update_texture(framebuffer.as_bytes())
@@ -317,14 +348,14 @@ fn main() {
 
         // Overlay informativo
         d.draw_text(
-            "Sistema Solar: Sol, Rocoso, Tierra, Gigante Gaseoso y Sistema de Lunas",
+            "Sistema Solar: Sol, Rocoso, Tierra, Gigante Gaseoso, Lunas y Anillos",
             20,
             20,
             20,
             RColor::GOLD,
         );
         d.draw_text(
-            "Flechas: Orbitar camara | Traslaciones heliocéntricas y múltiples órbitas lunares",
+            "Flechas: Orbitar camara | Anillos translúcidos con divisiones concéntricas",
             20,
             46,
             16,

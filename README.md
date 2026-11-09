@@ -57,3 +57,12 @@ Planeta gigante gaseoso tipo Saturno evaluado analíticamente mediante fluidodin
 3. **Capa 3: Vórtices Ciclónicos y Tormenta Ovalada:** Sistema de tormenta de alta presión persistente con núcleo rojizo/caoba y bordes arremolinados.
 4. **Capa 4: Traslucidez Sutil y Halo en el Limbo (Fresnel):** Comportamiento volumétrico difuso que refleja su estado puramente gaseoso con oscurecimiento hacia el limbo e iluminación crepuscular suave.
 - **Sistema de Lunas Secundarias:** Múltiples satélites naturales orbitando a diferentes radios e inclinaciones orbitales alrededor del gigante gaseoso.
+
+
+## Sistema de Anillos: Shader Procedural Translúcido
+Estructura anular alrededor del gigante gaseoso cargada desde modelo independiente (`anillo.obj`) e iluminada analíticamente sin texturas:
+
+1. **Capa 1: Bandas Concéntricas y División de Cassini:** Modulación armónica multiescala de densidad radial con separación vacía correspondiente a la División de Cassini y variación de los anillos A, B y C.
+2. **Capa 2: Gradiente Espectral Mineral:** Composición de partículas de hielo reflectante en los anillos más densos y silicatos ocres/apagados en los anillos interiores.
+3. **Capa 3: Micro-variación Azimutal:** Perturbación angular armónica para romper la simetría perfecta y simular filamentos orbitales.
+4. **Capa 4: Transparencia y Densidad Óptica (Alpha Blending):** Rasterización con mezcla alfa en CPU que permite observar el fondo espacial y el cuerpo planetario a través de los anillos.

@@ -1,6 +1,7 @@
 pub mod earth;
 pub mod gas_giant;
 pub mod moon;
+pub mod ring;
 pub mod rocky;
 pub mod sun;
 
@@ -9,6 +10,7 @@ use crate::math::{Vec2, Vec3};
 pub use earth::EarthPlanetShader;
 pub use gas_giant::GasGiantShader;
 pub use moon::MoonShader;
+pub use ring::RingShader;
 pub use rocky::RockyPlanetShader;
 pub use sun::SunShader;
 
