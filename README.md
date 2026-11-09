@@ -9,4 +9,10 @@ El objetivo del laboratorio es diseñar y renderizar múltiples cuerpos celestes
 - **Planeta Rocoso:** Shader geológico procedural con cráteres de impacto y mares de basalto.
 - **Planeta Tierra:** Superficie oceánica con masas continentales, casquetes polares y capa de nubes/atmósfera.
 - **Gigante Gaseoso:** Bandas atmosféricas jovianas, gradientes de latitud y turbulencia de vientos.
-- **Lunas y Anillos:** Modelos independientes con shaders procedurales específicos.
+## Fase 2: Pipeline Base de Renderizado y Esfera Central
+- Módulos matemáticos completos (`Vec2`, `Vec3`, `Vec4`, `Mat4`).
+- Pipeline de software en CPU con rasterización paralela por franjas, buffer de profundidad (Z-Buffer) y clipping contra el plano cercano.
+- Carga de mallas Wavefront OBJ (`sphere.obj`) abstrayendo coordenadas geométricas puras (sin materiales ni texturas).
+- Cámara orbital interactiva controlada con las flechas del teclado.
+- Renderizado de la esfera central en el origen `(0, 0, 0)` con rotación axial continua en función del tiempo.
+
