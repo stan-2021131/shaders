@@ -66,3 +66,22 @@ Estructura anular alrededor del gigante gaseoso cargada desde modelo independien
 2. **Capa 2: Gradiente Espectral Mineral:** Composición de partículas de hielo reflectante en los anillos más densos y silicatos ocres/apagados en los anillos interiores.
 3. **Capa 3: Micro-variación Azimutal:** Perturbación angular armónica para romper la simetría perfecta y simular filamentos orbitales.
 4. **Capa 4: Transparencia y Densidad Óptica (Alpha Blending):** Rasterización con mezcla alfa en CPU que permite observar el fondo espacial y el cuerpo planetario a través de los anillos.
+
+
+## Controles e Interacción
+- **`[0]`:** Enfocar la cámara en el **Sol** (estrella central).
+- **`[1]`:** Enfocar y seguir la órbita del **Planeta Rocoso**.
+- **`[2]`:** Enfocar y seguir al **Planeta Tierra** y su Luna.
+- **`[3]`:** Enfocar y seguir al **Gigante Gaseoso**, sus anillos translúcidos y sus lunas.
+- **`[4]`:** **Vista Panorámica Global** de todo el sistema solar.
+- **`[Flecha Izq / Der]`:** Orbitar la cámara horizontalmente (yaw) alrededor del cuerpo seleccionado.
+- **`[Flecha Arr / Aba]`:** Ajustar la elevación vertical (pitch) de la cámara.
+- **`[Escape]`:** Cerrar la aplicación.
+
+## Criterios de Evaluación y Puntos Reclamados
+- **Creatividad de Diseño (30 pts):** Sistema solar dinámico, coherente y artístico con 4 cuerpos celestes distintos (estrella de plasma, planeta rocoso con cráteres, planeta habitable biosférico y gigante gaseoso con anillos) más 3 lunas satelitales.
+- **Complejidad de Shaders (40 pts):** Cada cuerpo celeste posee 4 capas analíticas diferenciadas que modifican el color, la luminosidad y la opacidad superficial evaluadas íntegramente en CPU sin texturas.
+- **Planeta Extra (+10 pts):** Se implementaron 3 planetas en total (Rocoso, Tierra, Gigante Gaseoso) además del Sol central, superando los 2 planetas base requeridos.
+- **Sistema de Anillos en Gigante Gaseoso (+20 pts):** Modelo geométrico independiente (`anillo.obj`) con shader procedural translúcido mediante mezcla alfa (*Alpha Blending* en CPU).
+- **Lunas Satelitales (+20 pts):** Sistema de 3 lunas con modelos independientes orbitando la Tierra y el Gigante Gaseoso con su propio shader procedural de regolito y cráteres.
+- **Rotación y Traslación Orbital:** Cinemática determinista evaluada analíticamente en función del tiempo transcurrido (`sim_time`).

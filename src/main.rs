@@ -13,6 +13,37 @@ use std::path::Path;
 const WINDOW_WIDTH: usize = 800;
 const WINDOW_HEIGHT: usize = 600;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FocusTarget {
+    Sun = 0,
+    Rocky = 1,
+    Earth = 2,
+    GasGiant = 3,
+    Panoramic = 4,
+}
+
+impl FocusTarget {
+    fn default_distance(self) -> f32 {
+        match self {
+            FocusTarget::Sun => 4.6,
+            FocusTarget::Rocky => 2.2,
+            FocusTarget::Earth => 2.8,
+            FocusTarget::GasGiant => 4.5,
+            FocusTarget::Panoramic => 18.5,
+        }
+    }
+
+    fn name(self) -> &'static str {
+        match self {
+            FocusTarget::Sun => "Sol (Estrella Central)",
+            FocusTarget::Rocky => "Planeta Rocoso",
+            FocusTarget::Earth => "Planeta Tierra y Luna",
+            FocusTarget::GasGiant => "Gigante Gaseoso y Anillos",
+            FocusTarget::Panoramic => "Vista Panorámica del Sistema Solar",
+        }
+    }
+}
+
 fn main() {
     let (mut rl, thread) = raylib::init()
         .size(WINDOW_WIDTH as i32, WINDOW_HEIGHT as i32)
@@ -51,7 +82,7 @@ fn main() {
     let mut framebuffer = Framebuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     let mut depth_buffer = DepthBuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    // Cámara orbital panorámica que abarca al Sol y a todos los planetas
+    // Cámara orbital interactiva
     let aspect = WINDOW_WIDTH as f32 / WINDOW_HEIGHT as f32;
     let mut camera = Camera::new(
         Vec3::zero(),
@@ -90,19 +121,46 @@ fn main() {
     let mut ring_shader = RingShader::new(Vec3::zero(), 1.10, 1.95);
 
     let mut sim_time: f32 = 0.0;
+    let mut current_focus = FocusTarget::Panoramic;
 
     println!("============================================================");
-    println!("[Sistema Solar: Sol, Rocoso, Tierra, Gigante Gaseoso, Lunas y Anillos]");
-    println!("  [Flecha Izq / Der] : Orbitar cámara horizontalmente");
-    println!("  [Flecha Arr / Aba] : Ajustar elevación (pitch)");
-    println!("  [Escape]           : Cerrar la ventana");
+    println!("[Sistema Solar: Controles y Enfoque de Cuerpos Celestes]");
+    println!("  [0] : Enfocar Sol");
+    println!("  [1] : Enfocar Planeta Rocoso");
+    println!("  [2] : Enfocar Planeta Tierra y Luna");
+    println!("  [3] : Enfocar Gigante Gaseoso y Anillos");
+    println!("  [4] : Vista Panorámica del Sistema");
+    println!("  [Flechas] : Orbitar cámara libremente alrededor del objetivo");
+    println!("  [Escape]  : Cerrar la ventana");
     println!("============================================================");
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time().min(0.05);
         sim_time += dt;
 
-        // Control orbital de la cámara con las flechas
+        // Selección de objetivo de la cámara mediante teclas 0 a 4
+        if rl.is_key_pressed(KeyboardKey::KEY_ZERO) || rl.is_key_pressed(KeyboardKey::KEY_KP_0) {
+            current_focus = FocusTarget::Sun;
+            camera.distance = current_focus.default_distance();
+        }
+        if rl.is_key_pressed(KeyboardKey::KEY_ONE) || rl.is_key_pressed(KeyboardKey::KEY_KP_1) {
+            current_focus = FocusTarget::Rocky;
+            camera.distance = current_focus.default_distance();
+        }
+        if rl.is_key_pressed(KeyboardKey::KEY_TWO) || rl.is_key_pressed(KeyboardKey::KEY_KP_2) {
+            current_focus = FocusTarget::Earth;
+            camera.distance = current_focus.default_distance();
+        }
+        if rl.is_key_pressed(KeyboardKey::KEY_THREE) || rl.is_key_pressed(KeyboardKey::KEY_KP_3) {
+            current_focus = FocusTarget::GasGiant;
+            camera.distance = current_focus.default_distance();
+        }
+        if rl.is_key_pressed(KeyboardKey::KEY_FOUR) || rl.is_key_pressed(KeyboardKey::KEY_KP_4) {
+            current_focus = FocusTarget::Panoramic;
+            camera.distance = current_focus.default_distance();
+        }
+
+        // Control orbital con las flechas
         let orbit_speed = 1.6;
         if rl.is_key_down(KeyboardKey::KEY_LEFT) {
             camera.rotate_orbit(-orbit_speed * dt, 0.0);
@@ -116,6 +174,44 @@ fn main() {
         if rl.is_key_down(KeyboardKey::KEY_DOWN) {
             camera.rotate_orbit(0.0, -orbit_speed * dt);
         }
+
+        // Cálculo analítico de posiciones orbitales
+        let rocky_orbit_radius = 3.4;
+        let rocky_orbit_speed = 0.65;
+        let rocky_angle = sim_time * rocky_orbit_speed;
+        let rocky_pos = Vec3::new(
+            rocky_orbit_radius * rocky_angle.cos(),
+            0.0,
+            rocky_orbit_radius * rocky_angle.sin(),
+        );
+
+        let earth_orbit_radius = 6.2;
+        let earth_orbit_speed = 0.40;
+        let earth_angle = sim_time * earth_orbit_speed + 1.2;
+        let earth_pos = Vec3::new(
+            earth_orbit_radius * earth_angle.cos(),
+            0.0,
+            earth_orbit_radius * earth_angle.sin(),
+        );
+
+        let gas_orbit_radius = 9.8;
+        let gas_orbit_speed = 0.22;
+        let gas_angle = sim_time * gas_orbit_speed + 2.5;
+        let gas_pos = Vec3::new(
+            gas_orbit_radius * gas_angle.cos(),
+            0.0,
+            gas_orbit_radius * gas_angle.sin(),
+        );
+
+        // Actualizar el centro objetivo de la cámara según el foco activo
+        let target_pos = match current_focus {
+            FocusTarget::Sun => Vec3::zero(),
+            FocusTarget::Rocky => rocky_pos,
+            FocusTarget::Earth => earth_pos,
+            FocusTarget::GasGiant => gas_pos,
+            FocusTarget::Panoramic => Vec3::zero(),
+        };
+        camera.set_target(target_pos);
 
         // Limpieza de buffers (espacio profundo oscuro)
         framebuffer.clear(Color::new(10, 10, 18, 255));
@@ -143,16 +239,8 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &sun_ctx, &mut target);
 
         // =====================================================================
-        // 2. PLANETA ROCOSO (Órbita interior)
+        // 2. PLANETA ROCOSO
         // =====================================================================
-        let rocky_orbit_radius = 3.4;
-        let rocky_orbit_speed = 0.65;
-        let rocky_angle = sim_time * rocky_orbit_speed;
-        let rocky_pos = Vec3::new(
-            rocky_orbit_radius * rocky_angle.cos(),
-            0.0,
-            rocky_orbit_radius * rocky_angle.sin(),
-        );
         let rocky_rotation = sim_time * 1.8;
         let rocky_scale = 0.38;
 
@@ -171,16 +259,8 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &rocky_ctx, &mut target);
 
         // =====================================================================
-        // 3. PLANETA TIERRA (Órbita habitable)
+        // 3. PLANETA TIERRA
         // =====================================================================
-        let earth_orbit_radius = 6.2;
-        let earth_orbit_speed = 0.40;
-        let earth_angle = sim_time * earth_orbit_speed + 1.2;
-        let earth_pos = Vec3::new(
-            earth_orbit_radius * earth_angle.cos(),
-            0.0,
-            earth_orbit_radius * earth_angle.sin(),
-        );
         let earth_rotation = sim_time * 1.4;
         let earth_scale = 0.52;
 
@@ -235,16 +315,8 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &earth_moon_ctx, &mut target);
 
         // =====================================================================
-        // 5. GIGANTE GASEOSO (Cuerpo planetario)
+        // 5. GIGANTE GASEOSO
         // =====================================================================
-        let gas_orbit_radius = 9.8;
-        let gas_orbit_speed = 0.22;
-        let gas_angle = sim_time * gas_orbit_speed + 2.5;
-        let gas_pos = Vec3::new(
-            gas_orbit_radius * gas_angle.cos(),
-            0.0,
-            gas_orbit_radius * gas_angle.sin(),
-        );
         let gas_rotation = sim_time * 1.6;
         let gas_scale = 0.78;
 
@@ -267,7 +339,6 @@ fn main() {
         // =====================================================================
         // 6. LUNAS DEL GIGANTE GASEOSO
         // =====================================================================
-        // Luna 1 (Titán)
         let gas_moon1_radius = 1.60;
         let gas_moon1_speed = 1.4;
         let gas_moon1_angle = sim_time * gas_moon1_speed;
@@ -292,7 +363,6 @@ fn main() {
         .with_blend_mode(BlendMode::Opaque);
         renderer.render_mesh(&sphere_mesh, &gas_moon1_ctx, &mut target);
 
-        // Luna 2 (Encélado)
         let gas_moon2_radius = 2.25;
         let gas_moon2_speed = 0.85;
         let gas_moon2_angle = sim_time * gas_moon2_speed + 1.8;
@@ -318,7 +388,7 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &gas_moon2_ctx, &mut target);
 
         // =====================================================================
-        // 7. SISTEMA DE ANILLOS DE SATURNO (Alpha Blending transparente)
+        // 7. ANILLOS DE SATURNO (Transparencia con Alpha Blending)
         // =====================================================================
         let ring_tilt_x = 0.44;
         let ring_tilt_z = 0.16;
@@ -337,7 +407,7 @@ fn main() {
 
         renderer.render_mesh(&ring_mesh, &ring_ctx, &mut target);
 
-        // Actualización y presentación en Raylib
+        // Presentación en Raylib
         screen_texture
             .update_texture(framebuffer.as_bytes())
             .expect("Error al transferir framebuffer a la textura de Raylib");
@@ -346,20 +416,27 @@ fn main() {
         d.clear_background(RColor::BLACK);
         d.draw_texture(&screen_texture, 0, 0, RColor::WHITE);
 
-        // Overlay informativo
+        // Overlay interactivo
         d.draw_text(
-            "Sistema Solar: Sol, Rocoso, Tierra, Gigante Gaseoso, Lunas y Anillos",
+            &format!("Objetivo Enfocado: {}", current_focus.name()),
             20,
             20,
             20,
             RColor::GOLD,
         );
         d.draw_text(
-            "Flechas: Orbitar camara | Anillos translúcidos con divisiones concéntricas",
+            "Teclas [0] Sol  [1] Rocoso  [2] Tierra  [3] Gaseoso  [4] Sistema Completo",
             20,
             46,
             16,
             RColor::RAYWHITE,
+        );
+        d.draw_text(
+            "Flechas: Orbitar camara continuamente alrededor del cuerpo seleccionado",
+            20,
+            68,
+            14,
+            RColor::LIGHTGRAY,
         );
     }
 }
