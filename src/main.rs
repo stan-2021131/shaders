@@ -2,7 +2,7 @@ use ::shaders::buffer::{Color, DepthBuffer, Framebuffer};
 use ::shaders::camera::Camera;
 use ::shaders::math::{Mat4, Vec3};
 use ::shaders::mesh::Mesh;
-use ::shaders::pipeline::shaders::FlatColorShader;
+use ::shaders::pipeline::shaders::SunShader;
 use ::shaders::pipeline::{BlendMode, RenderContext, RenderTarget, SoftwareRenderer};
 use raylib::ffi;
 use raylib::prelude::{Color as RColor, Image, KeyboardKey, RaylibDraw, RaylibTexture2D};
@@ -14,7 +14,7 @@ const WINDOW_HEIGHT: usize = 600;
 fn main() {
     let (mut rl, thread) = raylib::init()
         .size(WINDOW_WIDTH as i32, WINDOW_HEIGHT as i32)
-        .title("Lab Shaders - Sistema Solar (Fase 2)")
+        .title("Lab Shaders - Sistema Solar")
         .build();
 
     rl.set_target_fps(60);
@@ -39,7 +39,7 @@ fn main() {
     let mut framebuffer = Framebuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     let mut depth_buffer = DepthBuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    // Cámara orbital centrada en el origen (0, 0, 0)
+    // Cámara orbital centrada en el origen
     let aspect = WINDOW_WIDTH as f32 / WINDOW_HEIGHT as f32;
     let mut camera = Camera::new(
         Vec3::zero(),
@@ -69,18 +69,20 @@ fn main() {
         .load_texture_from_image(&thread, &raw_image)
         .expect("Error al inicializar la textura en GPU para Raylib");
 
-    let shader = FlatColorShader::new(Color::new(245, 175, 40, 255));
+    let mut sun_shader = SunShader::new(Vec3::zero());
     let mut sphere_rotation: f32 = 0.0;
+    let mut sim_time: f32 = 0.0;
 
     println!("============================================================");
-    println!("[Fase 2: Visualizacion de la esfera]");
-    println!("  [Flecha Izq / Der] : Orbitar horizontalmente alrededor de la esfera");
+    println!("[Shader Procedural: Sol / Estrella Central]");
+    println!("  [Flecha Izq / Der] : Orbitar horizontalmente alrededor de la estrella");
     println!("  [Flecha Arr / Aba] : Orbitar verticalmente (pitch)");
     println!("  [Escape]           : Cerrar la ventana");
     println!("============================================================");
 
     while !rl.window_should_close() {
         let dt = rl.get_frame_time().min(0.05);
+        sim_time += dt;
 
         // Control orbital de la cámara con las flechas
         let orbit_speed = 1.6;
@@ -100,8 +102,12 @@ fn main() {
         // Rotación continua de la esfera sobre su propio eje Y
         sphere_rotation += 0.8 * dt;
 
+        // Actualización de parámetros dinámicos del shader de la estrella
+        sun_shader.set_time(sim_time);
+        sun_shader.set_camera_pos(camera.eye);
+
         // Limpieza de buffers (espacio profundo oscuro)
-        framebuffer.clear(Color::new(12, 12, 20, 255));
+        framebuffer.clear(Color::new(10, 10, 18, 255));
         depth_buffer.clear();
 
         // Construcción de matrices de transformación
@@ -113,7 +119,7 @@ fn main() {
             &model_matrix,
             &rotation_matrix,
             &vp_matrix,
-            &shader,
+            &sun_shader,
         ).with_blend_mode(BlendMode::Opaque);
 
         let mut target = RenderTarget {
@@ -135,14 +141,14 @@ fn main() {
 
         // Overlay informativo
         d.draw_text(
-            "Fase 2: Esfera base (Sol) en el origen",
+            "Estrella Central: Sol (Shader de Plasma Multicapa)",
             20,
             20,
             20,
             RColor::GOLD,
         );
         d.draw_text(
-            "Flechas: Orbitar camara | Rotacion axial continua activa",
+            "Flechas: Orbitar camara | Rotacion axial y conveccion activas",
             20,
             46,
             16,
