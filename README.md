@@ -47,3 +47,13 @@ Satélite natural que orbita solidariamente alrededor del planeta Tierra con mod
 2. **Capa 2: Tierras Altas de Anortosita:** Terreno elevado más antiguo y accidentado en tonalidades gris plateado.
 3. **Capa 3: Cráteres y Rayos de Eyecta:** Cráteres de impacto con crestas afiladas modeladas con *ridged noise* y material reflectante eyectado.
 4. **Capa 4: Fotometría de Vacío Espacial:** Iluminación solar directa con sombras nítidas y ausencia de atenuación atmosférica (terminator definido).
+
+
+## Gigante Gaseoso: Shader de Bandas y Turbulencia de Fluidos
+Planeta gigante gaseoso tipo Saturno evaluado analíticamente mediante fluidodinámica procedural y vórtices atmosféricos:
+
+1. **Capa 1: Bandas Zonales de Latitud:** Corrientes en chorro con paleta cálida de hidrocarburos y amoníaco que alternan caramelo dorado, beige suave, ocre ámbar y crema.
+2. **Capa 2: Mareas y Turbulencia de Gas:** Vientos contrarrotantes este-oeste modulados por latitud y perturbados con ruido tridimensional animado con el tiempo de simulación.
+3. **Capa 3: Vórtices Ciclónicos y Tormenta Ovalada:** Sistema de tormenta de alta presión persistente con núcleo rojizo/caoba y bordes arremolinados.
+4. **Capa 4: Traslucidez Sutil y Halo en el Limbo (Fresnel):** Comportamiento volumétrico difuso que refleja su estado puramente gaseoso con oscurecimiento hacia el limbo e iluminación crepuscular suave.
+- **Sistema de Lunas Secundarias:** Múltiples satélites naturales orbitando a diferentes radios e inclinaciones orbitales alrededor del gigante gaseoso.

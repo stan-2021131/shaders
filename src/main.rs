@@ -2,7 +2,9 @@ use ::shaders::buffer::{Color, DepthBuffer, Framebuffer};
 use ::shaders::camera::Camera;
 use ::shaders::math::{Mat4, Vec3};
 use ::shaders::mesh::Mesh;
-use ::shaders::pipeline::shaders::{EarthPlanetShader, MoonShader, RockyPlanetShader, SunShader};
+use ::shaders::pipeline::shaders::{
+    EarthPlanetShader, GasGiantShader, MoonShader, RockyPlanetShader, SunShader,
+};
 use ::shaders::pipeline::{BlendMode, RenderContext, RenderTarget, SoftwareRenderer};
 use raylib::ffi;
 use raylib::prelude::{Color as RColor, Image, KeyboardKey, RaylibDraw, RaylibTexture2D};
@@ -39,17 +41,17 @@ fn main() {
     let mut framebuffer = Framebuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
     let mut depth_buffer = DepthBuffer::new(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-    // Cámara orbital panorámica que abarca al Sol, Planeta Rocoso, Tierra y su Luna
+    // Cámara orbital panorámica que abarca al Sol y a todos los planetas
     let aspect = WINDOW_WIDTH as f32 / WINDOW_HEIGHT as f32;
     let mut camera = Camera::new(
         Vec3::zero(),
-        12.5,
+        18.5,
         0.3,
-        0.35,
+        0.38,
         45.0,
         aspect,
         0.1,
-        150.0,
+        250.0,
     );
 
     // Textura intermedia de Raylib para presentar el framebuffer de CPU
@@ -74,11 +76,12 @@ fn main() {
     let mut rocky_shader = RockyPlanetShader::new(42, Vec3::zero());
     let mut earth_shader = EarthPlanetShader::new(107, Vec3::zero());
     let mut moon_shader = MoonShader::new(999, Vec3::zero());
+    let mut gas_giant_shader = GasGiantShader::new(314, Vec3::zero());
 
     let mut sim_time: f32 = 0.0;
 
     println!("============================================================");
-    println!("[Sistema Solar: Sol, Planeta Rocoso, Tierra y Luna]");
+    println!("[Sistema Solar: Sol, Planeta Rocoso, Tierra, Gigante Gaseoso y Lunas]");
     println!("  [Flecha Izq / Der] : Orbitar cámara horizontalmente");
     println!("  [Flecha Arr / Aba] : Ajustar elevación (pitch)");
     println!("  [Escape]           : Cerrar la ventana");
@@ -157,7 +160,7 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &rocky_ctx, &mut target);
 
         // =====================================================================
-        // 3. PLANETA TIERRA (Órbita intermedia habitable)
+        // 3. PLANETA TIERRA (Órbita habitable)
         // =====================================================================
         let earth_orbit_radius = 6.2;
         let earth_orbit_speed = 0.40;
@@ -187,33 +190,121 @@ fn main() {
         renderer.render_mesh(&sphere_mesh, &earth_ctx, &mut target);
 
         // =====================================================================
-        // 4. LUNA DE LA TIERRA (Órbita local alrededor de la Tierra)
+        // 4. LUNA DE LA TIERRA
         // =====================================================================
-        let moon_orbit_radius = 1.15;
-        let moon_orbit_speed = 1.8;
-        let moon_angle = sim_time * moon_orbit_speed;
-        let moon_pos = earth_pos
+        let earth_moon_radius = 1.15;
+        let earth_moon_speed = 1.8;
+        let earth_moon_angle = sim_time * earth_moon_speed;
+        let earth_moon_pos = earth_pos
             + Vec3::new(
-                moon_orbit_radius * moon_angle.cos(),
-                0.22 * moon_angle.sin(),
-                moon_orbit_radius * moon_angle.sin(),
+                earth_moon_radius * earth_moon_angle.cos(),
+                0.22 * earth_moon_angle.sin(),
+                earth_moon_radius * earth_moon_angle.sin(),
             );
-        let moon_rotation = sim_time * 0.9;
-        let moon_scale = 0.14;
+        let earth_moon_rot = sim_time * 0.9;
+        let earth_moon_scale = 0.14;
 
-        let moon_model = Mat4::translation(moon_pos.x, moon_pos.y, moon_pos.z)
-            * Mat4::rotation_y(moon_rotation)
-            * Mat4::scaling(moon_scale, moon_scale, moon_scale);
-        let moon_rot = Mat4::rotation_y(moon_rotation);
+        let earth_moon_model = Mat4::translation(earth_moon_pos.x, earth_moon_pos.y, earth_moon_pos.z)
+            * Mat4::rotation_y(earth_moon_rot)
+            * Mat4::scaling(earth_moon_scale, earth_moon_scale, earth_moon_scale);
+        let earth_moon_rot_m = Mat4::rotation_y(earth_moon_rot);
 
-        moon_shader.body_center = moon_pos;
-        moon_shader.rotation_rad = moon_rotation;
+        moon_shader.body_center = earth_moon_pos;
+        moon_shader.rotation_rad = earth_moon_rot;
         moon_shader.light_pos = Vec3::zero();
 
-        let moon_ctx = RenderContext::new(&moon_model, &moon_rot, &vp_matrix, &moon_shader)
+        let earth_moon_ctx = RenderContext::new(
+            &earth_moon_model,
+            &earth_moon_rot_m,
+            &vp_matrix,
+            &moon_shader,
+        )
+        .with_blend_mode(BlendMode::Opaque);
+
+        renderer.render_mesh(&sphere_mesh, &earth_moon_ctx, &mut target);
+
+        // =====================================================================
+        // 5. GIGANTE GASEOSO (Órbita exterior)
+        // =====================================================================
+        let gas_orbit_radius = 9.8;
+        let gas_orbit_speed = 0.22;
+        let gas_angle = sim_time * gas_orbit_speed + 2.5;
+        let gas_pos = Vec3::new(
+            gas_orbit_radius * gas_angle.cos(),
+            0.0,
+            gas_orbit_radius * gas_angle.sin(),
+        );
+        let gas_rotation = sim_time * 1.6;
+        let gas_scale = 0.78;
+
+        let gas_model = Mat4::translation(gas_pos.x, gas_pos.y, gas_pos.z)
+            * Mat4::rotation_y(gas_rotation)
+            * Mat4::scaling(gas_scale, gas_scale, gas_scale);
+        let gas_rot = Mat4::rotation_y(gas_rotation);
+
+        gas_giant_shader.body_center = gas_pos;
+        gas_giant_shader.rotation_rad = gas_rotation;
+        gas_giant_shader.time = sim_time;
+        gas_giant_shader.camera_pos = camera.eye;
+        gas_giant_shader.light_pos = Vec3::zero();
+
+        let gas_ctx = RenderContext::new(&gas_model, &gas_rot, &vp_matrix, &gas_giant_shader)
             .with_blend_mode(BlendMode::Opaque);
 
-        renderer.render_mesh(&sphere_mesh, &moon_ctx, &mut target);
+        renderer.render_mesh(&sphere_mesh, &gas_ctx, &mut target);
+
+        // =====================================================================
+        // 6. LUNAS DEL GIGANTE GASEOSO (Luna 1 interior y Luna 2 exterior inclinada)
+        // =====================================================================
+        // Luna 1 (Titán)
+        let gas_moon1_radius = 1.55;
+        let gas_moon1_speed = 1.4;
+        let gas_moon1_angle = sim_time * gas_moon1_speed;
+        let gas_moon1_pos = gas_pos
+            + Vec3::new(
+                gas_moon1_radius * gas_moon1_angle.cos(),
+                0.15 * gas_moon1_angle.sin(),
+                gas_moon1_radius * gas_moon1_angle.sin(),
+            );
+        let gas_moon1_scale = 0.12;
+        let gas_moon1_model = Mat4::translation(gas_moon1_pos.x, gas_moon1_pos.y, gas_moon1_pos.z)
+            * Mat4::scaling(gas_moon1_scale, gas_moon1_scale, gas_moon1_scale);
+        let gas_moon1_rot = Mat4::IDENTITY;
+
+        moon_shader.body_center = gas_moon1_pos;
+        let gas_moon1_ctx = RenderContext::new(
+            &gas_moon1_model,
+            &gas_moon1_rot,
+            &vp_matrix,
+            &moon_shader,
+        )
+        .with_blend_mode(BlendMode::Opaque);
+        renderer.render_mesh(&sphere_mesh, &gas_moon1_ctx, &mut target);
+
+        // Luna 2 (Encélado / exterior inclinada)
+        let gas_moon2_radius = 2.15;
+        let gas_moon2_speed = 0.85;
+        let gas_moon2_angle = sim_time * gas_moon2_speed + 1.8;
+        let gas_moon2_pos = gas_pos
+            + Vec3::new(
+                gas_moon2_radius * gas_moon2_angle.cos(),
+                0.45 * gas_moon2_angle.sin(),
+                gas_moon2_radius * gas_moon2_angle.sin(),
+            );
+        let gas_moon2_scale = 0.09;
+        let gas_moon2_model = Mat4::translation(gas_moon2_pos.x, gas_moon2_pos.y, gas_moon2_pos.z)
+            * Mat4::scaling(gas_moon2_scale, gas_moon2_scale, gas_moon2_scale);
+        let gas_moon2_rot = Mat4::IDENTITY;
+
+        moon_shader.body_center = gas_moon2_pos;
+        let gas_moon2_ctx = RenderContext::new(
+            &gas_moon2_model,
+            &gas_moon2_rot,
+            &vp_matrix,
+            &moon_shader,
+        )
+        .with_blend_mode(BlendMode::Opaque);
+        renderer.render_mesh(&sphere_mesh, &gas_moon2_ctx, &mut target);
 
         // Actualización y presentación en Raylib
         screen_texture
@@ -226,14 +317,14 @@ fn main() {
 
         // Overlay informativo
         d.draw_text(
-            "Sistema Solar: Sol, Planeta Rocoso, Planeta Tierra y Luna",
+            "Sistema Solar: Sol, Rocoso, Tierra, Gigante Gaseoso y Sistema de Lunas",
             20,
             20,
             20,
             RColor::GOLD,
         );
         d.draw_text(
-            "Flechas: Orbitar camara | Traslacion heliocéntrica y lunar en tiempo real",
+            "Flechas: Orbitar camara | Traslaciones heliocéntricas y múltiples órbitas lunares",
             20,
             46,
             16,
