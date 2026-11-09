@@ -104,3 +104,4 @@ impl FragmentShader for SunShader {
         Color::from_f32(r, g, b, 1.0)
     }
 }
+

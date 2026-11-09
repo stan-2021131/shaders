@@ -1,7 +1,9 @@
+pub mod rocky;
 pub mod sun;
 
 use crate::buffer::Color;
 use crate::math::{Vec2, Vec3};
+pub use rocky::RockyPlanetShader;
 pub use sun::SunShader;
 
 /// Datos interpolados que recibe el shader de fragmentos en cada píxel evaluado en CPU.

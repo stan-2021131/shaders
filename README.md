@@ -8,7 +8,8 @@ El objetivo del laboratorio es diseñar y renderizar múltiples cuerpos celestes
 - **Álgebra Lineal y Transformaciones:** Implementación propia de `Vec2`, `Vec3`, `Vec4`, `Mat4`, proyecciones en perspectiva y Look-At.
 - **Buffers de CPU:** `Framebuffer` de color RGBA y `DepthBuffer` (Z-Buffer) administrados en memoria principal.
 - **Rasterizador por Software:** Rasterización paralela por franjas horizontales (`std::thread::scope`), recorte de primitivas contra el plano cercano (*clipping*) e interpolación con corrección de perspectiva.
-- **Cámara Orbital:** Control esférico suave (`yaw`, `pitch`, `distance`) operable con las flechas del teclado.
+- **Cámara Orbital Panorámica:** Control esférico suave (`yaw`, `pitch`, `distance`) operable con las flechas del teclado, adaptado para encuadrar el sistema planetario.
+- **Cinemática Orbital:** Rotación sobre eje propio y traslación orbital analítica continuas en función del tiempo transcurrido (`sim_time`).
 
 ## Estrella Solar: Shader de Plasma Procedural
 La estrella central del sistema solar se evalúa completamente en CPU a través de 4 capas analíticas que modulan el color y brillo superficial en función de coordenadas continuas y tiempo:
@@ -19,3 +20,11 @@ La estrella central del sistema solar se evalúa completamente en CPU a través 
 4. **Capa 4: Manchas Solares y Resplandor de Corona:**
    - **Manchas solares:** Vórtices oscuros calculados trigonométricamente simulando zonas magnéticas donde se inhibe la transferencia térmica.
    - **Corona / Efecto Limb:** Resplandor de silueta basado en Fresnel `(1 - N·V)^2.8` que irradia luz dorada hacia el vacío del espacio exterior.
+
+## Planeta Rocoso: Shader Geológico Procedural
+Superficie planetaria rocosa generada matemáticamente mediante síntesis analítica y ruido determinista 3D:
+
+1. **Capa 1: Cuencas Basálticas y Mares Volcánicos:** Regiones bajas de baja frecuencia modeladas con ruido de valor continuo cúbico en tonos oscuros `(0.12, 0.10, 0.09)`.
+2. **Capa 2: Mesetas y Masas Continentales:** Terreno elevado intermedio con tonalidades ocres, arcillosas y terracota mineral `(0.28, 0.20, 0.17)`.
+3. **Capa 3: Cráteres de Impacto con Crestas Elevadas:** Patrones circulares generados mediante *ridged noise* `(1 - |ruido - 0.5| * 2)^2` con bordes claros y depósitos de eyecta.
+4. **Capa 4: Micro-regolito e Iluminación Fotométrica Solar:** Grano granular de alta frecuencia superficial acoplado a un modelo de iluminación difusa originado en el Sol central `(0, 0, 0)` con modulación de relieve.
